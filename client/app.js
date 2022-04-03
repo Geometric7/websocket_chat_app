@@ -1,50 +1,70 @@
-const loginForm = document.getElementById('welcome-form');
-const messageSection = document.getElementById('messages-section');
-const messagesList = document.getElementById('messages-list');
-const addMessageForm = document.getElementById('add-messages-form');
-const userNameInput = document.getElementById('username');
-const messageContentInput = document.getElementById('message-content');
+const socket = io();
+socket.on('message', ({
+  author,
+  content
+}) => addMessage(author, content))
+///
+const data = {
+  loginForm: document.getElementById('welcome-form'),
+  messagesSection: document.getElementById('messages-section'),
+  messagesList: document.getElementById('messages-list'),
+  addMessageForm: document.getElementById('add-messages-form'),
+  userNameInput: document.getElementById('username'),
+  messageContentInput: document.getElementById('message-content'),
+};
 
 let userName;
 
-loginForm.addEventListener('submit', event => login(event));
-addMessageForm.addEventListener('submit', event => sendMessage(event));
-
+data.loginForm.addEventListener('submit', event => login(event));
+data.addMessageForm.addEventListener('submit', event => sendMessage(event));
 
 function login(event) {
   event.preventDefault();
 
-  if (userNameInput.value) {
-    userName = userNameInput.value;
-    messageSection.classList.add('show');
-    loginForm.classList.remove('show');
+  if (data.userNameInput.value) {
+    userName = data.userNameInput.value;
+    data.loginForm.classList.remove('show');
+    data.messagesSection.classList.add('show');
+    socket.emit('join', userName);
   } else {
-    alert('Insert your name!');
-  };
-
-  console.log(userName);
-};
+    alert('Insert Your name!');
+  }
+}
 
 function sendMessage(event) {
   event.preventDefault();
-  let messageContent;
-  if(messageContentInput.value){
-    messageContent = messageContentInput.value;
-    addMessage(userName, messageContent);
-    messageContentInput.value = '';
+  let messageContent = data.messageContentInput.value;
+
+  if (!messageContent.length) {
+    alert('Type something!');
   } else {
-    alert ('Type your letter');
+    addMessage(userName, messageContent);
+    socket.emit('message', {
+      author: userName,
+      content: messageContent
+    })
+    data.messageContentInput.value = '';
   }
 };
 
 function addMessage(author, content) {
   const message = document.createElement('li');
+
   message.classList.add('message');
+
   message.classList.add('message--received');
-  if(author == userName) message.classList.add('message--self');
+  if (author === userName) {
+    message.classList.add('message--self');
+  } else if (author === 'Chatbot') {
+    message.classList.add('message--chatbot');
+  }
+
   message.innerHTML = `
-    <h3 class='message__author'>${ userName === author ? 'You' : author }<?h3>
-    <div class='message__content'>${content}</div>
+    <h3 class="message__author">${userName === author ? 'You' : author }</h3>
+    <div class="message__content">
+      ${content}
+    </div>
   `;
-  messagesList.appendChild(message);
-};
+
+  data.messagesList.appendChild(message);
+}
